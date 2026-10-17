@@ -1,0 +1,41 @@
+services:
+  claude-code-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TZ: ${TZ:-America/Los_Angeles}
+    image: claude-code-custom
+    container_name: claude_code_container
+
+    volumes:
+      - ./workspace:/workspace
+      - claude-code-bashhistory:/commandhistory
+      - claude-code-config:/root/.claude
+      - ./scripts:/scripts
+
+    environment:
+      - NODE_OPTIONS=${NODE_OPTIONS:-"--max-old-space-size=4096"}
+      - CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR:-"/root/.claude"}
+      - POWERLEVEL9K_DISABLE_GITSTATUS=${POWERLEVEL9K_DISABLE_GITSTATUS:-"true"}
+      - DEVCONTAINER=true
+      - CLAUDE_CODE_DISABLE_MOUSE=1
+      - CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1
+      - CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS=6
+      - CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1
+    working_dir: /workspace
+
+    # Reach the Windows host (where Unity Editor runs the MCP HTTP server) from
+    # inside the container via http://host.docker.internal:8080/mcp.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    stdin_open: true
+    tty: true
+
+    entrypoint: ["/bin/bash", "-c", "chmod +x /scripts/claude-watchdog.sh && /scripts/claude-watchdog.sh & exec /bin/zsh"]
+
+
+volumes:
+  claude-code-bashhistory:
+  claude-code-config:
